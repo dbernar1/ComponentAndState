@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import LoadingScreen from './components/loading'
 import Coins from './component.js'
-import { Provider, connect } from 'react-redux';
-import { createMyStore, loadInitialData, } from '../../redux';
+import { Provider, } from 'react-redux';
+import { createMyStore, connecty, } from '../../redux';
 
 const myStore = createMyStore();
 
@@ -26,13 +26,9 @@ export default App;
 
 // Details...
 
-const CoinScreenContainer = connect(
-	( { initialLoading } ) => ( {
-		initialLoading,
-	} ),
-	dispatch => ( {
-		loadInitialData: () => dispatch( loadInitialData() ),
-	} )
+const CoinScreenContainer = connecty(
+	[ 'initialLoading', ],
+	[ 'loadInitialData', ],
 )( class extends Component {
 	componentDidMount() {
 		this.props.loadInitialData();

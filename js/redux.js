@@ -1,81 +1,16 @@
 import { createStore, applyMiddleware, } from 'redux';
 import thunk from 'redux-thunk';
+import { connect } from 'react-redux';
+
+const numItemsToLoadAtATime = 20;
 
 const actionTypes = {
 	REFRESH: 'refresh',
 	REFRESHED: 'refreshed',
-	LOAD_MORE: 'loadMore',
 	LOADED_MORE: 'loadedMore',
 	LOAD_INITIAL: 'loadInitial',
 	LOADED_INITIAL: 'loadedInitial',
-};
-
-const coinAPIBaseURL = 'https://api.coinmarketcap.com';
-const numItemsToLoadAtATime = 20;
-
-const fetchCoinData = ( startPosition ) => {
-	const url = `${coinAPIBaseURL}/v1/ticker/?limit=${ numItemsToLoadAtATime }&start=${ startPosition }`;
-
-	return fetch( url )
-	.then( response => response.json() )
-	.catch( error => console.error(error) );
-};
-
-export const loadMore = () => {
-	return ( dispatch, getState ) => {
-		dispatch( {
-			type: actionTypes.LOAD_MORE,
-		} );
-
-		const { numItemsLoadedSoFar, fetchesAlreadyDonePreviously, } = getState();
-
-		if ( fetchesAlreadyDonePreviously.includes( numItemsLoadedSoFar ) ) {
-			return;
-		}
-
-		fetchesAlreadyDonePreviously.push( numItemsLoadedSoFar );
-
-		fetchCoinData( numItemsLoadedSoFar )
-		.then( coinData => dispatch( {
-			type: actionTypes.LOADED_MORE,
-			coinData,
-		} ) );
-	};
-};
-
-export const refreshCoinData = () => {
-	return ( dispatch, getState ) => {
-		dispatch( {
-			type: actionTypes.REFRESH,
-		} );
-
-		const { numItemsLoadedSoFar } = getState();
-
-		setTimeout( () => {
-			fetchCoinData( numItemsLoadedSoFar )
-			.then( coinData => dispatch( {
-				type: actionTypes.REFRESHED,
-				coinData,
-			} ) );
-		}, 500 );
-
-	};
-};
-
-export const loadInitialData = () => {
-	return ( dispatch, getState ) => {
-		dispatch( {
-			type: actionTypes.LOAD_INITIAL,
-		} );
-
-		const { numItemsLoadedSoFar } = getState();
-
-		fetchCoinData( numItemsLoadedSoFar )
-		.then( coinData => dispatch( {
-			type: actionTypes.LOADED_INITIAL,
-			coinData,
-		} ) );
-	};
+	LOAD_MORE: 'fetching',
 };
 
 const initialState = {
@@ -92,8 +27,6 @@ export const createMyStore = () => createStore( ( state = initialState, action )
 			return {
 				...state,
 				refreshing: true,
-				numItemsLoadedSoFar: 0,
-				fetchesAlreadyDonePreviously: [ 0, ],
 			};
 		break;
 		case actionTypes.REFRESHED:
@@ -101,6 +34,7 @@ export const createMyStore = () => createStore( ( state = initialState, action )
 				...state,
 				refreshing: false,
 				numItemsLoadedSoFar: numItemsToLoadAtATime,
+				fetchesAlreadyDonePreviously: [ 0, ],
 				coinData: action.coinData,
 			};
 		break;
@@ -125,9 +59,94 @@ export const createMyStore = () => createStore( ( state = initialState, action )
 				numItemsLoadedSoFar: state.numItemsLoadedSoFar + numItemsToLoadAtATime,
 			};
 		break;
-		case 'LOAD_MORE': // just doesn't do anything. Could just as well remove.
+		case actionTypes.LOAD_MORE:
+			return {
+				...state,
+				fetchesAlreadyDonePreviously: state.fetchesAlreadyDonePreviously.concat( action.fetchBeingPerformed ),
+			};
+		break;
 		default:
 			return state;
 		break;
 	}
 }, applyMiddleware( thunk ) );
+
+const fetchCoinData = ( startPosition ) => {
+	const coinAPIBaseURL = 'https://api.coinmarketcap.com';
+
+	const url = `${coinAPIBaseURL}/v1/ticker/?limit=${ numItemsToLoadAtATime }&start=${ startPosition }`;
+
+	return fetch( url )
+	.then( response => response.json() )
+	.catch( error => console.error(error) );
+};
+
+const actions = {
+	loadMore() {
+		return ( dispatch, getState ) => {
+			const { numItemsLoadedSoFar, fetchesAlreadyDonePreviously, } = getState();
+
+			if ( fetchesAlreadyDonePreviously.includes( numItemsLoadedSoFar ) ) {
+				return;
+			}
+
+			dispatch( {
+				type: actionTypes.LOAD_MORE,
+				fetchBeingPerformed: numItemsLoadedSoFar,
+			} );
+
+			fetchCoinData( numItemsLoadedSoFar )
+			.then( coinData => dispatch( {
+				type: actionTypes.LOADED_MORE,
+				coinData,
+			} ) );
+		};
+	},
+	refreshCoinData() {
+		return ( dispatch, getState ) => {
+			dispatch( {
+				type: actionTypes.REFRESH,
+			} );
+
+			setTimeout( () => {
+				fetchCoinData( 0 )
+				.then( coinData => dispatch( {
+					type: actionTypes.REFRESHED,
+					coinData,
+				} ) );
+			}, 500 );
+
+		};
+	},
+	loadInitialData() {
+		return ( dispatch, getState ) => {
+			dispatch( {
+				type: actionTypes.LOAD_INITIAL,
+			} );
+
+			const { numItemsLoadedSoFar } = getState();
+
+			fetchCoinData( numItemsLoadedSoFar )
+			.then( coinData => dispatch( {
+				type: actionTypes.LOADED_INITIAL,
+				coinData,
+			} ) );
+		};
+	},
+};
+
+export const connecty = ( piecesOfDataToMakeAvailable, actionsToMakeAvailable ) => connect(
+	state => {
+		const props = {};
+
+		piecesOfDataToMakeAvailable.forEach( key => props[ key ] = state[ key ] );
+
+		return props;
+	},
+	dispatch => {
+		const componentActions = {};
+
+		actionsToMakeAvailable.forEach( actionName => componentActions[ actionName ] = () => dispatch( actions[ actionName ]() ) );
+return componentActions;
+	}
+);

@@ -2,27 +2,21 @@ import React, { Component } from 'react';
 import { ScrollView, View, Text, FlatList, Image, } from 'react-native';
 import styles from './style.js';
 import LoadingScreen from './components/loading'
-import { refreshCoinData, loadMore, } from '../../redux';
-import { connect } from 'react-redux';
+import { connecty } from '../../redux';
 
-const Coins = connect(
-	( { coinData, refreshing, } ) => ( {
-		coinData, refreshing,
-	} ),
-	dispatch => ( {
-		refresh: () => dispatch( refreshCoinData() ),
-		loadMore: () => dispatch( loadMore() ),
-	} ),
+const Coins = connecty(
+	[ 'coinData', 'refreshing', ],
+	[ 'refreshCoinData', 'loadMore', ]
 )( ( {
-	coinData, refresh, refreshing, loadMore,
+	coinData, refreshCoinData, refreshing, loadMore,
 } ) => <View style={styles.container}>
 	<FlatList
-		ListHeaderComponent={ <AppHeading text="Coin Prices" />}
+		ListHeaderComponent={ <AppHeading text="Coin Prices" /> }
 		ListFooterComponent={ <LoadingScreen /> }
 		refreshing={ refreshing }
-		onRefresh={ refresh }
+		onRefresh={ refreshCoinData }
 		onEndReached={ loadMore }
-		onEndReachedThreshold={ 5 }
+		onEndReachedThreshold={ 0.7 }
 		data={ coinData }
 		renderItem={ ( { item } ) => <CoinPriceItem { ...item } /> }
 		keyExtractor={ item => item.id }
