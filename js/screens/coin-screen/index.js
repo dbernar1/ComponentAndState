@@ -3,10 +3,15 @@ import LoadingScreen from './components/loading'
 import Coins from './component.js'
 
 const coinAPIBaseURL = 'https://api.coinmarketcap.com';
+const numItemsToLoadAtATime = 20;
 
-const fetchCoinData = () => fetch( `${coinAPIBaseURL}/v1/ticker/?limit=10` )
-.then( response => response.json() )
-.catch( error => console.error(error) );
+const fetchCoinData = ( startPosition ) => {
+	const url = `${coinAPIBaseURL}/v1/ticker/?limit=${ numItemsToLoadAtATime }&start=${ startPosition }`;
+
+	return fetch( url )
+	.then( response => response.json() )
+	.catch( error => console.error(error) );
+};
 
 class CoinScreenContainer extends Component {
 	constructor( props ) {
@@ -15,13 +20,19 @@ class CoinScreenContainer extends Component {
 		this.state = {
 			initialLoading: true,
 			refreshing: false,
+			numItemsLoadedSoFar: 0,
+			fetchesAlreadyDonePreviously: [], // to avoid loading same list of coins multiple times
 		};
 	}
 
 	refreshCoinData() {
-		this.setState( { refreshing: true, }, () => {
+		this.setState( {
+			refreshing: true,
+			numItemsLoadedSoFar: 0,
+			fetchesAlreadyDonePreviously: [],
+		}, () => {
 			setTimeout( () => {
-				fetchCoinData()
+				fetchCoinData( this.state.numItemsLoadedSoFar )
 				.then( coinData => this.setState( {
 					refreshing: false,
 					coinData,
@@ -31,10 +42,25 @@ class CoinScreenContainer extends Component {
 	}
 
 	componentDidMount() {
-		fetchCoinData()
+		fetchCoinData( this.state.numItemsLoadedSoFar )
 		.then( coinData => this.setState( {
 			initialLoading: false,
 			coinData,
+			numItemsLoadedSoFar: this.state.numItemsLoadedSoFar + numItemsToLoadAtATime,
+		} ) );
+	}
+
+	loadMore() {
+		if ( this.state.fetchesAlreadyDonePreviously.includes( this.state.numItemsLoadedSoFar ) ) {
+			return
+		}
+
+		this.state.fetchesAlreadyDonePreviously.push( this.state.numItemsLoadedSoFar );
+
+		fetchCoinData( this.state.numItemsLoadedSoFar )
+		.then( coinData => this.setState( {
+			coinData: this.state.coinData.concat( coinData ),
+			numItemsLoadedSoFar: this.state.numItemsLoadedSoFar + numItemsToLoadAtATime,
 		} ) );
 	}
 
@@ -49,6 +75,7 @@ class CoinScreenContainer extends Component {
 			coinData={ coinData }
 			refresh={ () => this.refreshCoinData() }
 			refreshing={ refreshing }
+			loadMore={ () => this.loadMore() }
 		/>;
 	}
 }

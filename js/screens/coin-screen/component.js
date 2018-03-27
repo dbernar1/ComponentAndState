@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import { ScrollView, View, Text, FlatList, Image, } from 'react-native';
 import styles from './style.js';
+import LoadingScreen from './components/loading'
 
 const AppHeading = ( { text } ) => <Text style={ styles.appHeading }>{ text.toUpperCase() }</Text>;
 
-const CoinImage = ( { symbol } ) => <Image
-	source={ { uri: cryptoImages[ symbol ], } }
+const CoinImage = ( { name } ) => <Image
+	source={ { uri: `https://coincodex.com/en/resources/images/admin/coins/${ name.toLowerCase().replace( ' ', '-' ) }.png:resizebox?56x56`, } }
 	style={ styles.coinImage }
 />;
 
@@ -16,7 +17,7 @@ const CoinPercentChange24H = ( { children } ) => <View style={ styles.flexRow } 
 
 const CoinPriceItem = ( { symbol, name, price_usd, percent_change_24h, } ) => <View style={ styles.coinPriceItem }>
 	<View style={ { flex: 1, } }>
-		<CoinImage symbol={ symbol } />
+		<CoinImage name={ name } />
 	</View>
 	<View style={ [ styles.flexRow, { flex: 4, }, ] }>
 		<CoinSymbol>{ symbol }</CoinSymbol>
@@ -29,11 +30,14 @@ const CoinPriceItem = ( { symbol, name, price_usd, percent_change_24h, } ) => <V
 	</View>
 </View>;
 
-const Coins = ( { coinData, refresh, refreshing, } ) => <View style={styles.container}>
+const Coins = ( { coinData, refresh, refreshing, loadMore, } ) => <View style={styles.container}>
 	<FlatList
 		ListHeaderComponent={ <AppHeading text="Coin Prices" />}
+		ListFooterComponent={ <LoadingScreen /> }
 		refreshing={ refreshing }
 		onRefresh={ refresh }
+		onEndReached={ loadMore }
+		onEndReachedThreshold={ 5 }
 		data={ coinData }
 		renderItem={ ( { item } ) => <CoinPriceItem { ...item } /> }
 		keyExtractor={ item => item.id }
@@ -41,19 +45,3 @@ const Coins = ( { coinData, refresh, refreshing, } ) => <View style={styles.cont
 </View>;
 
 export default Coins;
-
-const cryptoImages = {
-	BTC: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609483/bitcoin_eqld4v.png',
-	ETH: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609485/ethereum_nw0chu.png',
-	XRP: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609486/ripple_p0xeut.png',
-	BCH: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609483/bitcoin-cash_cvt54z.png',
-	LTC: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609485/litecoin_q8e17h.png',
-	DASH: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609484/dash_oltvqi.png',
-	XEM: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609486/nem_imprip.png',
-	BCC: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609486/bitconnect_oj1bo5.png',
-	XMR: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609486/monero_wzk3ur.png',
-	NEO: 'https://res.cloudinary.com/da7jhtpgh/image/upload/v1508609486/neo_fvoo6c.png',
-	ADA: 'https://coincodex.com/en/resources/images/admin/coins/cardano.png:resizebox?60x60',
-	MIOTA: 'https://coincodex.com/en/resources/images/admin/coins/iota.png:resizebox?60x60',
-	XLM: 'https://coincodex.com/en/resources/images/admin/coins/stellar.png:resizebox?60x60',
-};
