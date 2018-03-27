@@ -2,6 +2,44 @@ import React, { Component } from 'react';
 import { ScrollView, View, Text, FlatList, Image, } from 'react-native';
 import styles from './style.js';
 import LoadingScreen from './components/loading'
+import { refreshCoinData, loadMore, } from '../../redux';
+import { connect } from 'react-redux';
+
+const Coins = connect(
+	( { coinData, refreshing, } ) => ( {
+		coinData, refreshing,
+	} ),
+	dispatch => ( {
+		refresh: () => dispatch( refreshCoinData() ),
+		loadMore: () => dispatch( loadMore() ),
+	} ),
+)( ( {
+	coinData, refresh, refreshing, loadMore,
+} ) => <View style={styles.container}>
+	<FlatList
+		ListHeaderComponent={ <AppHeading text="Coin Prices" />}
+		ListFooterComponent={ <LoadingScreen /> }
+		refreshing={ refreshing }
+		onRefresh={ refresh }
+		onEndReached={ loadMore }
+		onEndReachedThreshold={ 5 }
+		data={ coinData }
+		renderItem={ ( { item } ) => <CoinPriceItem { ...item } /> }
+		keyExtractor={ item => item.id }
+	/>
+</View> );
+
+export default Coins;
+
+
+
+
+
+
+
+
+
+// Details...
 
 const AppHeading = ( { text } ) => <Text style={ styles.appHeading }>{ text.toUpperCase() }</Text>;
 
@@ -29,19 +67,3 @@ const CoinPriceItem = ( { symbol, name, price_usd, percent_change_24h, } ) => <V
 		<CoinPercentChange24H>{ percent_change_24h }</CoinPercentChange24H>
 	</View>
 </View>;
-
-const Coins = ( { coinData, refresh, refreshing, loadMore, } ) => <View style={styles.container}>
-	<FlatList
-		ListHeaderComponent={ <AppHeading text="Coin Prices" />}
-		ListFooterComponent={ <LoadingScreen /> }
-		refreshing={ refreshing }
-		onRefresh={ refresh }
-		onEndReached={ loadMore }
-		onEndReachedThreshold={ 5 }
-		data={ coinData }
-		renderItem={ ( { item } ) => <CoinPriceItem { ...item } /> }
-		keyExtractor={ item => item.id }
-	/>
-</View>;
-
-export default Coins;

@@ -1,4 +1,4 @@
 import { AppRegistry } from 'react-native';
-import CoinScreenContainer from './js/screens/coin-screen';
+import App from './js/screens/coin-screen';
 
-AppRegistry.registerComponent('ComponentAndState', () => CoinScreenContainer);
+AppRegistry.registerComponent('ComponentAndState', () => App);
