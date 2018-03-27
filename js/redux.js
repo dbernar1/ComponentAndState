@@ -17,7 +17,7 @@ const initialState = {
 	coinData: [],
 	refreshing: false,
 	numItemsLoadedSoFar: 0,
-	fetchesAlreadyDonePreviously: [], // to avoid loading same list of coins multiple times
+	currentlyLoadingMore: false,
 	initialLoading: false,
 };
 
@@ -34,7 +34,6 @@ export const createMyStore = () => createStore( ( state = initialState, action )
 				...state,
 				refreshing: false,
 				numItemsLoadedSoFar: numItemsToLoadAtATime,
-				fetchesAlreadyDonePreviously: [ 0, ],
 				coinData: action.coinData,
 			};
 		break;
@@ -57,12 +56,13 @@ export const createMyStore = () => createStore( ( state = initialState, action )
 				...state,
 				coinData: state.coinData.concat( action.coinData ),
 				numItemsLoadedSoFar: state.numItemsLoadedSoFar + numItemsToLoadAtATime,
+				currentlyLoadingMore: false,
 			};
 		break;
 		case actionTypes.LOAD_MORE:
 			return {
 				...state,
-				fetchesAlreadyDonePreviously: state.fetchesAlreadyDonePreviously.concat( action.fetchBeingPerformed ),
+				currentlyLoadingMore: true,
 			};
 		break;
 		default:
@@ -84,15 +84,14 @@ const fetchCoinData = ( startPosition ) => {
 const actions = {
 	loadMore() {
 		return ( dispatch, getState ) => {
-			const { numItemsLoadedSoFar, fetchesAlreadyDonePreviously, } = getState();
+			const { numItemsLoadedSoFar, currentlyLoadingMore, } = getState();
 
-			if ( fetchesAlreadyDonePreviously.includes( numItemsLoadedSoFar ) ) {
+			if ( currentlyLoadingMore ) {
 				return;
 			}
 
 			dispatch( {
 				type: actionTypes.LOAD_MORE,
-				fetchBeingPerformed: numItemsLoadedSoFar,
 			} );
 
 			fetchCoinData( numItemsLoadedSoFar )
